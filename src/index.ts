@@ -306,3 +306,42 @@ export type BuilderConfig<
 export type ValidationResult =
 	| { ok: true }
 	| { ok: false; errors: Array<{ offset: number; kind: 'ERROR' }> };
+
+// ---------------------------------------------------------------------------
+// Builder & Render pipeline interfaces
+// ---------------------------------------------------------------------------
+
+/**
+ * Terminal operations on a fluent IR builder.
+ * Every language-specific builder (e.g., Rust's `fn()`, `struct()`) must
+ * implement this interface so consumers have a uniform way to extract the
+ * built node or render it to source.
+ *
+ * @typeParam N - The IR node type produced by this builder.
+ */
+export interface BuilderTerminal<N extends { kind: string }> {
+	/** Return the raw IR node without rendering. */
+	build(): N;
+	/** Render to source string with validation (throws on error). */
+	render(): string;
+	/** Render to source string without validation. */
+	renderSilent(): string;
+}
+
+/**
+ * The render + validate pipeline for a grammar's IR nodes.
+ * Language-specific packages implement this to provide rendering and
+ * validation for their node types.
+ *
+ * @typeParam N - The IR node union type (discriminated by `kind`).
+ */
+export interface RenderPipeline<N extends { kind: string }> {
+	/** Render a node to source with validation (throws on error). */
+	render(node: N): string;
+	/** Render a node to source without validation. */
+	renderSilent(node: N): string;
+	/** Assert rendered source has no errors; returns source on success, throws on failure. */
+	assertValid(source: string): string;
+	/** Lightweight validation without throwing. */
+	validateFast(source: string): ValidationResult;
+}
