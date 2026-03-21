@@ -45,6 +45,53 @@ type GoStructType = NodeType<GoTypes, 'struct_type'>;
 type GoFunctionDeclConfig = BuilderConfig<GoTypes, GoFunctionDecl>;
 ```
 
+## Builder and render pipeline interfaces
+
+### `BuilderTerminal<N>`
+
+The `BuilderTerminal` interface defines the terminal operations that every fluent IR builder must implement. When a language-specific package provides builder functions (e.g., `fn()`, `struct()` in rust-ir), each builder chain ends with one of these methods:
+
+- **`build()`** -- returns the raw IR node without rendering
+- **`render()`** -- renders to a source string and validates (throws on parse errors)
+- **`renderSilent()`** -- renders to a source string without validation
+
+Implement `BuilderTerminal` when you are creating a fluent builder API for a language IR. The type parameter `N` is the specific IR node type that the builder produces.
+
+### `RenderPipeline<N>`
+
+The `RenderPipeline` interface defines the render and validation pipeline for a grammar's IR nodes. Language-specific packages implement this to provide a single entry point for converting IR nodes to source code and validating the output:
+
+- **`render(node)`** -- renders a node to source with validation (throws on error)
+- **`renderSilent(node)`** -- renders a node to source without validation
+- **`assertValid(source)`** -- validates rendered source; returns it on success, throws on failure
+- **`validateFast(source)`** -- lightweight validation returning a `ValidationResult` without throwing
+
+Implement `RenderPipeline` when you are creating a language-specific IR package that needs to convert IR nodes into valid source code.
+
+### Example: how rust-ir uses these interfaces
+
+```ts
+import type { BuilderTerminal, RenderPipeline, ValidationResult } from '@refactory/grammar-types';
+
+// A Rust IR node (discriminated union by `kind`)
+type RustNode = { kind: 'struct_item'; name: string } | { kind: 'function_item'; name: string };
+
+// The render pipeline for Rust nodes
+class RustPipeline implements RenderPipeline<RustNode> {
+  render(node: RustNode): string { /* render + validate */ }
+  renderSilent(node: RustNode): string { /* render only */ }
+  assertValid(source: string): string { /* validate or throw */ }
+  validateFast(source: string): ValidationResult { /* quick check */ }
+}
+
+// A fluent builder's terminal mixin
+class StructBuilder implements BuilderTerminal<{ kind: 'struct_item'; name: string }> {
+  build() { /* return raw IR node */ }
+  render() { /* render + validate via pipeline */ }
+  renderSilent() { /* render without validation */ }
+}
+```
+
 ## Key types
 
 | Type | Description |
@@ -57,6 +104,8 @@ type GoFunctionDeclConfig = BuilderConfig<GoTypes, GoFunctionDecl>;
 | `BuilderConfig<G, T>` | Builder configuration with defaultable fields made optional |
 | `AliasMap<G>` | Per-kind field rename overrides for ergonomic API names |
 | `ValidationResult` | Result type for tree-sitter parse validation |
+| `BuilderTerminal<N>` | Interface for fluent IR builder terminal operations (build, render, renderSilent) |
+| `RenderPipeline<N>` | Interface for the render + validate pipeline used by language-specific packages |
 
 ## Installation
 

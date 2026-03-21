@@ -14,6 +14,9 @@ This is a **pure type-level library** -- no runtime code, only TypeScript type d
 - **Main projection**: `NodeType<G, K>` -- the primary export
 - **Builder helpers**: `NodeBuilderInput`, `BuilderConfig`, `BuilderInputValue`
 - **Alias map**: `AliasMap<G>` for ergonomic field renames
+- **Builder terminal**: `BuilderTerminal<N>` -- interface for fluent IR builder terminal operations (`.build()`, `.render()`, `.renderSilent()`)
+- **Render pipeline**: `RenderPipeline<N>` -- interface for the render + validate pipeline (`.render()`, `.renderSilent()`, `.assertValid()`, `.validateFast()`)
+- These interfaces are implemented by language-specific packages (e.g., `rust-ir`)
 
 ### Running
 
